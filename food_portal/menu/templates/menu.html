@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="announcements">
+    <h2>Announcements</h2>
+    {% if announcements %}
+        <div class="announcement-list">
+            {% for announcement in announcements %}
+                <div class="announcement">
+                    <h3>{{ announcement.title }}</h3>
+                    <p>{{ announcement.message }}</p>
+                    <small>Posted on {{ announcement.created_at|date:"M d, Y" }}</small>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No announcements at the moment.</p>
+    {% endif %}
+</div>
+
+<div class="menu-sections">
+    <section class="food-section">
+        <h2>Food Items</h2>
+        <div class="menu-grid">
+            {% for item in food_items %}
+                <div class="menu-item" data-id="{{ item.id }}">
+                    {% if item.image %}
+                        <img src="{{ item.image.url }}" alt="{{ item.name }}">
+                    {% else %}
+                        <img src="{% static 'images/default-food.jpg' %}" alt="{{ item.name }}">
+                    {% endif %}
+                    <h3>{{ item.name }}</h3>
+                    <p class="price">Ksh {{ item.price }}</p>
+                    <p class="stock">Available: {{ item.available_units }}</p>
+                    <button class="add-to-cart" data-id="{{ item.id }}">Add to Cart</button>
+                    <div class="quantity-controls" style="display: none;">
+                        <button class="decrement">-</button>
+                        <span class="quantity">1</span>
+                        <button class="increment">+</button>
+                        <button class="confirm-add">Add</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="beverage-section">
+        <h2>Beverages</h2>
+        <div class="menu-grid">
+            {% for item in beverage_items %}
+                <div class="menu-item" data-id="{{ item.id }}">
+                    {% if item.image %}
+                        <img src="{{ item.image.url }}" alt="{{ item.name }}">
+                    {% else %}
+                        <img src="{% static 'images/default-beverage.jpg' %}" alt="{{ item.name }}">
+                    {% endif %}
+                    <h3>{{ item.name }}</h3>
+                    <p class="price">Ksh {{ item.price }}</p>
+                    <p class="stock">Available: {{ item.available_units }}</p>
+                    <button class="add-to-cart" data-id="{{ item.id }}">Add to Cart</button>
+                    <div class="quantity-controls" style="display: none;">
+                        <button class="decrement">-</button>
+                        <span class="quantity">1</span>
+                        <button class="increment">+</button>
+                        <button class="confirm-add">Add</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+
+<div id="cart-sidebar">
+    <h3>Your Cart</h3>
+    <div id="cart-items">
+        <!-- Cart items will be loaded here via JavaScript -->
+    </div>
+    <div id="cart-total">
+        <p>Total: Ksh <span id="total-amount">0.00</span></p>
+    </div>
+    <button id="checkout-btn">Proceed to Checkout</button>
+</div>
+
+<div id="checkout-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Checkout</h2>
+        <form id="checkout-form">
+            <div class="form-group">
+                <label for="phone">M-Pesa Phone Number</label>
+                <input type="text" id="phone" name="phone" placeholder="2547XXXXXXXX" required>
+            </div>
+            <button type="submit">Confirm Payment</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/menu.js' %}"></script>
+{% endblock %}
