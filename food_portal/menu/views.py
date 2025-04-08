@@ -165,47 +165,234 @@ def resolve_alert(request, alert_id):
             return JsonResponse({'status': 'error', 'message': 'Alert not found'})
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
-@login_required
+# Add this at the top of views.py
+from django.views.decorators.http import require_http_methods
+
+@require_http_methods(["GET", "POST"])
 def add_to_cart(request):
     if request.method == 'POST':
-        item_id = request.POST.get('item_id')
-        quantity = int(request.POST.get('quantity', 1))
-        
+        try:
+            data = json.loads(request.body)
+            item_id = data.get('item_id')
+            quantity = int(data.get('quantity', 1))
+            
+            try:
+                item = MenuItem.objects.get(id=item_id, available_units__gt=0)
+                
+                if quantity > item.available_units:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Only {item.available_units} units available'
+                    })
+                
+                # Initialize cart if it doesn't exist
+                if 'cart' not in request.session:
+                    request.session['cart'] = {}
+                
+                # Update cart
+                cart = request.session['cart']
+                if item_id in cart:
+                    if (cart[item_id] + quantity) > item.available_units:
+                        return JsonResponse({
+                            'success': False,
+                            'error': 'Cannot add more than available stock'
+                        })
+                    cart[item_id] += quantity
+                else:
+                    cart[item_id] = quantity
+                
+                request.session.modified = True
+                
+                return JsonResponse({
+                    'success': True,
+                    'cart_count': sum(cart.values()),
+                    'message': 'Item added to cart'
+                })
+                
+            except MenuItem.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Item not available'
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Invalid request method'
+    }, status=405)
+
+@require_http_methods(["GET"])
+def get_cart(request):
+    cart = request.session.get('cart', {})
+    items = []
+    total = 0
+    
+    for item_id, quantity in cart.items():
         try:
             item = MenuItem.objects.get(id=item_id)
-            
-            if item.available_units < quantity:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': f'Only {item.available_units} units available'
-                })
-            
-            cart = request.session.get('cart', {})
-            current_quantity = cart.get(item_id, 0)
-            
-            # Check if adding this quantity would exceed available units
-            if (current_quantity + quantity) > item.available_units:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': f'Cannot add {quantity} more. You already have {current_quantity} in cart.'
-                })
-            
-            cart[item_id] = current_quantity + quantity
+            items.append({
+                'id': item.id,
+                'name': item.name,
+                'price': float(item.price),
+                'quantity': quantity,
+                'available': item.available_units > 0,
+                'subtotal': float(item.price) * quantity
+            })
+            total += float(item.price) * quantity
+        except MenuItem.DoesNotExist:
+            continue
+    
+    return JsonResponse({
+        'success': True,
+        'items': items,
+        'total': total,
+        'cart_count': sum(cart.values())
+    })
+
+@require_http_methods(["POST"])
+def remove_from_cart(request):
+    try:
+        data = json.loads(request.body)
+        item_id = data.get('item_id')
+        
+        cart = request.session.get('cart', {})
+        if item_id in cart:
+            del cart[item_id]
             request.session['cart'] = cart
             request.session.modified = True
             
             return JsonResponse({
-                'status': 'success',
+                'success': True,
                 'cart_count': sum(cart.values()),
-                'item_total': cart[item_id]
+                'message': 'Item removed from cart'
             })
-        except MenuItem.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Item not found'})
-        except ValueError:
-            return JsonResponse({'status': 'error', 'message': 'Invalid quantity'})
-    
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Item not in cart'
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
 
+@require_http_methods(["POST"])
+def checkout(request):
+    try:
+        data = json.loads(request.body)
+        name = data.get('name')
+        phone = data.get('phone')
+        
+        if not name or not phone:
+            return JsonResponse({
+                'success': False,
+                'error': 'Name and phone number are required'
+            })
+        
+        if not phone.startswith('254') or len(phone) != 12:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid phone number format (use 2547XXXXXXXX)'
+            })
+        
+        cart = request.session.get('cart', {})
+        if not cart:
+            return JsonResponse({
+                'success': False,
+                'error': 'Your cart is empty'
+            })
+        
+        # Calculate total and verify stock
+        total = 0
+        order_items = []
+        
+        for item_id, quantity in cart.items():
+            try:
+                item = MenuItem.objects.get(id=item_id)
+                if item.available_units < quantity:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Not enough stock for {item.name}'
+                    })
+                
+                total += item.price * quantity
+                order_items.append({
+                    'item': item,
+                    'quantity': quantity,
+                    'price': item.price
+                })
+            except MenuItem.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Item {item_id} no longer available'
+                })
+        
+        # Create order (without user if guest)
+        order = Order.objects.create(
+            customer_name=name,
+            customer_phone=phone,
+            total_amount=total,
+            status='pending'
+        )
+        
+        # Create order items
+        for item_data in order_items:
+            OrderItem.objects.create(
+                order=order,
+                menu_item=item_data['item'],
+                quantity=item_data['quantity'],
+                price=item_data['price']
+            )
+        
+        # Process M-Pesa payment
+        mpesa_response = initiate_stk_push(
+            phone_number=phone,
+            amount=total,
+            order_id=order.id
+        )
+        
+        if 'error' in mpesa_response:
+            order.status = 'failed'
+            order.save()
+            return JsonResponse({
+                'success': False,
+                'error': mpesa_response['error']
+            })
+        
+        if 'ResponseCode' in mpesa_response and mpesa_response['ResponseCode'] == '0':
+            order.mpesa_checkout_id = mpesa_response.get('CheckoutRequestID')
+            order.status = 'processing'
+            order.save()
+            
+            # Clear cart only after successful payment initiation
+            request.session['cart'] = {}
+            request.session.modified = True
+            
+            return JsonResponse({
+                'success': True,
+                'order_id': order.id,
+                'message': 'Payment initiated! Please check your phone to complete the payment.'
+            })
+        else:
+            order.status = 'failed'
+            order.save()
+            return JsonResponse({
+                'success': False,
+                'error': 'Payment initiation failed'
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
 @login_required
 def update_cart_item(request, item_id):
     if request.method == 'POST':
@@ -435,3 +622,4 @@ def get_cart_items(request):
         'items': items,
         'total': total
     })
+

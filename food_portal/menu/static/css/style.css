@@ -506,3 +506,30 @@ main {
         width: 100%;
     }
 }
+/* Add to your style.css */
+.stock.available {
+    color: green;
+    font-weight: bold;
+}
+
+.stock.unavailable {
+    color: red;
+    font-weight: bold;
+}
+
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.quantity-controls button {
+    padding: 3px 8px;
+    cursor: pointer;
+}
+
+.quantity {
+    min-width: 20px;
+    text-align: center;
+}
