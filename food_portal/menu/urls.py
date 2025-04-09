@@ -19,12 +19,12 @@ from . import views
 
 urlpatterns = [
     path('', views.menu_view, name='menu'),
-    path('admin-menu/', views.admin_menu_view, name='admin_menu'),
-    path('update-item/', views.update_menu_item, name='update_item'),
-    path('create-announcement/', views.create_announcement, name='create_announcement'),
     path('add-to-cart/', views.add_to_cart, name='add_to_cart'),
     path('checkout/', views.checkout, name='checkout'),
     path('order/<int:order_id>/', views.order_detail, name='order_detail'),
     path('mpesa-callback/', views.mpesa_callback, name='mpesa_callback'),
+    path('get-cart-count/', views.get_cart_count, name='get_cart_count'),
+     path('get-cart/', views.get_cart, name='get_cart')
+    
     
 ]

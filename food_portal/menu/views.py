@@ -2,9 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.models import User
 from .models import MenuItem, Announcement, Order, OrderItem, StockAlert
-from django.core import serializers
 import json
 import requests
 from django.conf import settings
@@ -12,8 +10,8 @@ from django.contrib import messages
 import base64
 import datetime
 from requests.auth import HTTPBasicAuth 
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
+
 
 # M-Pesa Utility Functions
 def get_mpesa_access_token():
@@ -88,82 +86,6 @@ def menu_view(request):
     }
     return render(request, 'menu.html', context)
 
-@login_required
-def admin_menu_view(request):
-    if not request.user.is_staff:
-        return redirect('menu')
-    
-    food_items = MenuItem.objects.filter(category='food')
-    beverage_items = MenuItem.objects.filter(category='beverage')
-    stock_alerts = StockAlert.objects.filter(is_resolved=False)
-    
-    context = {
-        'food_items': food_items,
-        'beverage_items': beverage_items,
-        'stock_alerts': stock_alerts,
-    }
-    return render(request, 'admin_menu.html', context)
-
-@login_required
-def update_menu_item(request):
-    if request.method == 'POST' and request.user.is_staff:
-        item_id = request.POST.get('item_id')
-        price = request.POST.get('price')
-        units = request.POST.get('units')
-        
-        try:
-            item = MenuItem.objects.get(id=item_id)
-            item.price = price
-            item.available_units = units
-            item.save()
-            
-            # Check if stock is low
-            if int(units) == 0:
-                alert, created = StockAlert.objects.get_or_create(
-                    menu_item=item,
-                    is_resolved=False,
-                    defaults={'message': f'{item.name} is out of stock!'}
-                )
-            elif int(units) > 0:
-                # Resolve any existing alerts for this item
-                StockAlert.objects.filter(menu_item=item, is_resolved=False).update(is_resolved=True)
-            
-            return JsonResponse({'status': 'success'})
-        except (MenuItem.DoesNotExist, ValueError) as e:
-            return JsonResponse({'status': 'error', 'message': str(e)})
-    
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
-
-@login_required
-def create_announcement(request):
-    if request.method == 'POST' and request.user.is_staff:
-        title = request.POST.get('title')
-        message = request.POST.get('message')
-        
-        if not title or not message:
-            return JsonResponse({'status': 'error', 'message': 'Title and message are required'})
-        
-        Announcement.objects.create(
-            title=title,
-            message=message,
-            created_by=request.user
-        )
-        
-        return JsonResponse({'status': 'success'})
-    
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
-
-@login_required
-def resolve_alert(request, alert_id):
-    if request.method == 'POST' and request.user.is_staff:
-        try:
-            alert = StockAlert.objects.get(id=alert_id)
-            alert.is_resolved = True
-            alert.save()
-            return JsonResponse({'status': 'success'})
-        except StockAlert.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Alert not found'})
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
 # Add this at the top of views.py
 from django.views.decorators.http import require_http_methods
@@ -435,7 +357,6 @@ def update_cart_item(request, item_id):
     
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
-@login_required
 def checkout(request):
     if request.method == 'POST':
         phone_number = request.POST.get('phone_number')
@@ -598,7 +519,6 @@ def get_cart_count(request):
     cart = request.session.get('cart', {})
     return JsonResponse({'cart_count': sum(cart.values())})
 
-def get_cart_items(request):
     cart = request.session.get('cart', {})
     items = []
     total = 0
@@ -622,4 +542,3 @@ def get_cart_items(request):
         'items': items,
         'total': total
     })
-
