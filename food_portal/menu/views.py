@@ -393,7 +393,7 @@ def checkout(request):
             'success': False,
             'error': str(e)
         }, status=500)
-@login_required
+
 def update_cart_item(request, item_id):
     if request.method == 'POST':
         action = request.POST.get('action')  # 'increase', 'decrease', or 'remove'
