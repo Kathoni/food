@@ -19,6 +19,11 @@ from django.urls import include, path
 from django.conf import settings
 from django.contrib.auth import views as auth_views 
 from django.conf.urls.static import static
+
+admin.site.site_header = 'Menu Management'
+admin.site.site_title = 'Menu Management'
+admin.site.index_title = 'Welcome to Menu Management'
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('menu.urls')),

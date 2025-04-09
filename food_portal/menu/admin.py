@@ -22,3 +22,4 @@ admin.site.register(MenuItem, MenuItemAdmin)
 admin.site.register(Announcement)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(StockAlert)
+

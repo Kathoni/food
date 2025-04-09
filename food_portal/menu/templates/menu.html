@@ -67,7 +67,7 @@
                         {% if item.available_units > 0 %}Available{% else %}Not Available{% endif %}
                     </p>
                     {% if item.available_units > 0 %}
-                        <button class="add-to-cart" data-id="{{ item.id }}">Add to Cart</button>
+                        <button class="add-to-cart" data-id="{{ item.id }}">Order</button>
                         <div class="quantity-controls" style="display: none;">
                             <button class="decrement">-</button>
                             <span class="quantity">1</span>
@@ -75,7 +75,7 @@
                             <button class="confirm-add">Order</button>
                         </div>
                     {% else %}
-                        <button class="add-to-cart" disabled>Out of Stock</button>
+                        <button class="add-to-cart" disabled>Not available</button>
                     {% endif %}
                 </div>
             {% endfor %}
@@ -112,7 +112,6 @@
     </div>
 </div>
 {% endblock %}
-
 {% block scripts %}
 <script src="{% static 'js/menu.js' %}"></script>
 {% endblock %}
