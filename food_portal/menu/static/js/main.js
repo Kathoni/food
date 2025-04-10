@@ -63,11 +63,7 @@ function loadCartItems() {
                         </div>
                         <div class="cart-item-total">
                             <p>Ksh ${item.subtotal.toFixed(2)}</p>
-                            <button class="remove-item" data-id="${item.id}">×</button>
-                        </div>
-                        <div class="cart-item-actions">
-                            <button class="decrease-item" data-id="${item.id}">-</button>
-                            <button class="increase-item" data-id="${item.id}">+</button>
+                            <button class="remove-item" data-id="${item.id}">Remove</button>
                         </div>
                     `;
                     cartItemsContainer.appendChild(itemElement);
@@ -129,30 +125,6 @@ function addToCart(itemId, quantity = 1) {
     });
 }
 
-function updateCartItem(itemId, change) {
-    fetch('/update-cart-item/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken'),
-        },
-        body: JSON.stringify({ item_id: itemId, change: change })
-    })
-    .then(handleResponse)
-    .then(data => {
-        if (data.success) {
-            loadCartItems();
-            updateCartCount();
-        } else {
-            alert(data.error || 'Error updating cart');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to update cart item');
-    });
-}
-
 function removeFromCart(itemId) {
     fetch('/remove-from-cart/', {
         method: 'POST',
@@ -193,7 +165,7 @@ function initMenuItems() {
 
             quantityControls.style.display = 'flex';
             this.style.display = 'none';
-            quantityDisplay.textContent = '1';
+            quantityDisplay.textContent = '0';
 
             confirmBtn.onclick = () => {
                 const quantity = parseInt(quantityDisplay.textContent);
@@ -214,7 +186,7 @@ function initMenuItems() {
             const quantityDisplay = e.target.parentElement.querySelector('.quantity');
             if (quantityDisplay) {
                 const current = parseInt(quantityDisplay.textContent);
-                if (current > 1) quantityDisplay.textContent = current - 1;
+                if (current > 0) quantityDisplay.textContent = current - 1;
             }
         }
     });

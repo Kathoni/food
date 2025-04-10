@@ -32,7 +32,7 @@ def initiate_stk_push(phone_number, amount, order_id):
         "PhoneNumber": phone_number,
         "CallBackURL": settings.MPESA_CALLBACK_URL,
         "AccountReference": f"ORDER{order_id}",
-        "TransactionDesc": "Food Order Payment"
+        # "TransactionDesc": "Food Order Payment"
     }
     
     headers = {

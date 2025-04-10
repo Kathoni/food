@@ -66,3 +66,5 @@ class StockAlert(models.Model):
     
     def __str__(self):
         return f"Stock Alert for {self.menu_item.name}"
+    
+    

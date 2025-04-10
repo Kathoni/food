@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import MenuItem, Announcement, Order, OrderItem, StockAlert
+from .models import MenuItem, Announcement, Order, OrderItem
 import json
 import requests
 from django.conf import settings
@@ -54,7 +54,7 @@ def initiate_stk_push(phone_number, amount, order_id):
         "Amount": str(amount),
         "PartyA": phone_number,
         "PartyB": settings.MPESA_BUSINESS_SHORTCODE,
-        "PhoneNumber": phone_number,
+        "PhoneNumber": 254111725146,
         "CallBackURL": settings.MPESA_CALLBACK_URL,
         "AccountReference": f"ORDER{order_id}",
         "TransactionDesc": "Food Order Payment"
@@ -206,157 +206,115 @@ def remove_from_cart(request):
         }, status=400)
 
 @require_http_methods(["POST"])
-def checkout(request):
-    try:
-        data = json.loads(request.body)
-        name = data.get('name')
-        phone = data.get('phone')
+# def checkout(request):
+#     try:
+#         data = json.loads(request.body)
+#         name = data.get('name')
+#         phone = data.get('phone')
         
-        if not name or not phone:
-            return JsonResponse({
-                'success': False,
-                'error': 'Name and phone number are required'
-            })
+#         if not name or not phone:
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': 'Name and phone number are required'
+#             })
         
-        if not phone.startswith('254') or len(phone) != 12:
-            return JsonResponse({
-                'success': False,
-                'error': 'Invalid phone number format (use 2547XXXXXXXX)'
-            })
+#         if not phone.startswith('254') or len(phone) != 12:
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': 'Invalid phone number format (use 2547XXXXXXXX)'
+#             })
         
-        cart = request.session.get('cart', {})
-        if not cart:
-            return JsonResponse({
-                'success': False,
-                'error': 'Your cart is empty'
-            })
+#         cart = request.session.get('cart', {})
+#         if not cart:
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': 'Your cart is empty'
+#             })
         
-        # Calculate total and verify stock
-        total = 0
-        order_items = []
+#         # Calculate total and verify stock
+#         total = 0
+#         order_items = []
         
-        for item_id, quantity in cart.items():
-            try:
-                item = MenuItem.objects.get(id=item_id)
-                if item.available_units < quantity:
-                    return JsonResponse({
-                        'success': False,
-                        'error': f'Not enough stock for {item.name}'
-                    })
+#         for item_id, quantity in cart.items():
+#             try:
+#                 item = MenuItem.objects.get(id=item_id)
+#                 if item.available_units < quantity:
+#                     return JsonResponse({
+#                         'success': False,
+#                         'error': f'Not enough stock for {item.name}'
+#                     })
                 
-                total += item.price * quantity
-                order_items.append({
-                    'item': item,
-                    'quantity': quantity,
-                    'price': item.price
-                })
-            except MenuItem.DoesNotExist:
-                return JsonResponse({
-                    'success': False,
-                    'error': f'Item {item_id} no longer available'
-                })
+#                 total += item.price * quantity
+#                 order_items.append({
+#                     'item': item,
+#                     'quantity': quantity,
+#                     'price': item.price
+#                 })
+#             except MenuItem.DoesNotExist:
+#                 return JsonResponse({
+#                     'success': False,
+#                     'error': f'Item {item_id} no longer available'
+#                 })
         
-        # Create order (without user if guest)
-        order = Order.objects.create(
-            customer_name=name,
-            customer_phone=phone,
-            total_amount=total,
-            status='pending'
-        )
+#         # Create order (without user if guest)
+#         order = Order.objects.create(
+#             customer_name=name,
+#             customer_phone=phone,
+#             total_amount=total,
+#             status='pending'
+#         )
         
-        # Create order items
-        for item_data in order_items:
-            OrderItem.objects.create(
-                order=order,
-                menu_item=item_data['item'],
-                quantity=item_data['quantity'],
-                price=item_data['price']
-            )
+#         # Create order items
+#         for item_data in order_items:
+#             OrderItem.objects.create(
+#                 order=order,
+#                 menu_item=item_data['item'],
+#                 quantity=item_data['quantity'],
+#                 price=item_data['price']
+#             )
         
-        # Process M-Pesa payment
-        mpesa_response = initiate_stk_push(
-            phone_number=phone,
-            amount=total,
-            order_id=order.id
-        )
+#         # Process M-Pesa payment
+#         mpesa_response = initiate_stk_push(
+#             phone_number=phone,
+#             amount=total,
+#             order_id=order.id
+#         )
         
-        if 'error' in mpesa_response:
-            order.status = 'failed'
-            order.save()
-            return JsonResponse({
-                'success': False,
-                'error': mpesa_response['error']
-            })
+#         if 'error' in mpesa_response:
+#             order.status = 'failed'
+#             order.save()
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': mpesa_response['error']
+#             })
         
-        if 'ResponseCode' in mpesa_response and mpesa_response['ResponseCode'] == '0':
-            order.mpesa_checkout_id = mpesa_response.get('CheckoutRequestID')
-            order.status = 'processing'
-            order.save()
+#         if 'ResponseCode' in mpesa_response and mpesa_response['ResponseCode'] == '0':
+#             order.mpesa_checkout_id = mpesa_response.get('CheckoutRequestID')
+#             order.status = 'processing'
+#             order.save()
             
-            # Clear cart only after successful payment initiation
-            request.session['cart'] = {}
-            request.session.modified = True
+#             # Clear cart only after successful payment initiation
+#             request.session['cart'] = {}
+#             request.session.modified = True
             
-            return JsonResponse({
-                'success': True,
-                'order_id': order.id,
-                'message': 'Payment initiated! Please check your phone to complete the payment.'
-            })
-        else:
-            order.status = 'failed'
-            order.save()
-            return JsonResponse({
-                'success': False,
-                'error': 'Payment initiation failed'
-            })
+#             return JsonResponse({
+#                 'success': True,
+#                 'order_id': order.id,
+#                 'message': 'Payment initiated! Please check your phone to complete the payment.'
+#             })
+#         else:
+#             order.status = 'failed'
+#             order.save()
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': 'Payment initiation failed'
+#             })
             
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
-
-def update_cart_item(request, item_id):
-    if request.method == 'POST':
-        action = request.POST.get('action')  # 'increase', 'decrease', or 'remove'
-        
-        try:
-            item = MenuItem.objects.get(id=item_id)
-            cart = request.session.get('cart', {})
-            
-            if item_id not in cart:
-                return JsonResponse({'status': 'error', 'message': 'Item not in cart'})
-            
-            if action == 'increase':
-                if item.available_units <= cart[item_id]:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': f'Only {item.available_units} units available'
-                    })
-                cart[item_id] += 1
-            elif action == 'decrease':
-                if cart[item_id] <= 1:
-                    del cart[item_id]
-                else:
-                    cart[item_id] -= 1
-            elif action == 'remove':
-                del cart[item_id]
-            else:
-                return JsonResponse({'status': 'error', 'message': 'Invalid action'})
-            
-            request.session['cart'] = cart
-            request.session.modified = True
-            
-            return JsonResponse({
-                'status': 'success',
-                'cart_count': sum(cart.values()),
-                'item_quantity': cart.get(item_id, 0)
-            })
-        except MenuItem.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Item not found'})
-    
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
-
+#     except Exception as e:
+#         return JsonResponse({
+#             'success': False,
+#             'error': str(e)
+#         }, status=500)
 def checkout(request):
     if request.method == 'POST':
         phone_number = request.POST.get('phone_number')
@@ -519,6 +477,7 @@ def get_cart_count(request):
     cart = request.session.get('cart', {})
     return JsonResponse({'cart_count': sum(cart.values())})
 
+
 def get_cart_items(request):
     cart = request.session.get('cart', {})
     items = []
@@ -543,3 +502,5 @@ def get_cart_items(request):
         'items': items,
         'total': total
     })
+def Order(request):
+    return render( request, 'order.html')
