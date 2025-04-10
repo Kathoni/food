@@ -519,6 +519,7 @@ def get_cart_count(request):
     cart = request.session.get('cart', {})
     return JsonResponse({'cart_count': sum(cart.values())})
 
+def get_cart_items(request):
     cart = request.session.get('cart', {})
     items = []
     total = 0

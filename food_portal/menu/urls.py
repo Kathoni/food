@@ -24,7 +24,8 @@ urlpatterns = [
     path('order/<int:order_id>/', views.order_detail, name='order_detail'),
     path('mpesa-callback/', views.mpesa_callback, name='mpesa_callback'),
     path('get-cart-count/', views.get_cart_count, name='get_cart_count'),
-     path('get-cart/', views.get_cart, name='get_cart')
-    
+    path('get-cart/', views.get_cart, name='get_cart'),
+    path('update-cart-item/', views.update_cart_item, name='update_cart_item'),
+    path('remove-from-cart/', views.remove_from_cart, name= 'remove_from_cart')
     
 ]
