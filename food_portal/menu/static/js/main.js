@@ -263,3 +263,44 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+function initCartFunctionality() {
+    const cartLink = document.getElementById('cart-link');
+    const cartSidebar = document.getElementById('cart-sidebar');
+    const checkoutBtn = document.getElementById('checkout-btn');
+    const checkoutModal = document.getElementById('checkout-modal');
+    const closeModal = document.querySelector('.close');
+
+    // Toggle cart sidebar
+    if (cartLink && cartSidebar) {
+        cartLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            cartSidebar.style.right = cartSidebar.style.right === '0px' ? '-350px' : '0px';
+            if (cartSidebar.style.right === '0px') loadCartItems();
+        });
+    }
+
+    // Open checkout modal
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (checkoutModal) checkoutModal.style.display = 'block';
+        });
+    }
+
+    // Close modal when clicking [X]
+    if (closeModal) {
+        closeModal.addEventListener('click', function () {
+            if (checkoutModal) checkoutModal.style.display = 'none';
+        });
+    }
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function (e) {
+        if (e.target === checkoutModal) {
+            checkoutModal.style.display = 'none';
+        }
+    });
+
+    updateCartCount();
+}

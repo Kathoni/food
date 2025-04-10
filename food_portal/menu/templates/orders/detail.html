@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <style>
+    body {
+      background-color: #eafaf1; /* Light greenish background */
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    h2 {
+      color: #388e3c; /* Green color for heading */
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    h3 {
+      color: #388e3c;
+    }
+
+    p {
+      font-size: 1.1em;
+      color: #555;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 20px 0;
+    }
+
+    li {
+      background-color: #ffffff;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    li:nth-child(odd) {
+      background-color: #f1f8f4; /* Slightly darker green for odd items */
+    }
+
+    .btn {
+      background-color: #388e3c; /* Green button */
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .btn:hover {
+      background-color: #2c6f2e; /* Darker green on hover */
+    }
+
+    a {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: #388e3c;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    a:hover {
+      color: #2c6f2e;
+    }
+
+    form {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+  </style>
+
+  <h2>Order #{{ order.id }}</h2>
+  <p>Status: {{ order.status }}</p>
+  <p>Customer: {{ order.customer_name }}</p>
+
+  <h3>Items:</h3>
+  <ul>
+    {% for item in order_items %}
+      <li>{{ item.quantity }} x {{ item.menu_item.name }} @ Ksh {{ item.price }} = Ksh {{ item.price|floatformat:2|add:""|floatformat:2|add:item.quantity|floatformat:2 }}</li>
+    {% endfor %}
+  </ul>
+
+  <form action="{% url 'delete_order' order.id %}" method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn">Mark as Served & Delete</button>
+  </form>
+
+  <a href="{% url 'order_list' %}">Back to Order List</a>
+{% endblock %}

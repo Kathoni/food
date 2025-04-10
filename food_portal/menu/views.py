@@ -251,15 +251,3 @@ def delete_order(request, order_id):
         return redirect('order_list')
     
     return render(request, 'orders/confirm_delete.html', {'order': order})
-@login_required
-def order_detail(request, order_id):
-    order = get_object_or_404(Order, id=order_id)
-    if not request.user.is_staff and order.user != request.user:
-        messages.error(request, "You don't have permission to view this order")
-        return redirect('order_list')
-    
-    order_items = order.orderitem_set.all()  # This gets all OrderItems for that Order
-    return render(request, 'orders/detail.html', {
-        'order': order,
-        'order_items': order_items
-    })

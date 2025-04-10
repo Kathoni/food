@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Orders</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #0e9436;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h2 {
+      color: #333;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      background-color: #fff;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    li a {
+      text-decoration: none;
+      color: #333;
+      font-weight: bold;
+    }
+
+    li a:hover {
+      color: #007BFF;
+    }
+
+    .no-orders {
+      font-size: 1.2em;
+      color: #777;
+      text-align: center;
+    }
+
+    footer {
+      background-color: #40b43c;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      position: absolute;
+      width: 100%;
+      bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Food Portal</h1>
+  </header>
+
+  <main>
+    <div style="max-width: 800px; margin: 20px auto;">
+      <h2>My Orders</h2>
+
+      {% if orders %}
+        <ul>
+          {% for order in orders %}
+            <li>
+              <a href="{% url 'order_detail' order.id %}">Order #{{ order.id }}</a> - {{ order.status }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="no-orders">No orders available.</p>
+      {% endif %}
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Food Portal. All rights reserved.</p>
+  </footer>
+</body>
+</html>
