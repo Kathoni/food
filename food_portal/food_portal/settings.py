@@ -129,9 +129,3 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-MPESA_CONSUMER_KEY = '5kjxDgZpyrOJhdYDIGrgmSUg4vG5tN2oCdumoBTkRWPoSqWv'
-MPESA_CONSUMER_SECRET = 'X47GaqUtat7tbAGOUg83LJrt4I8qVhmgksAwjCoqVdcNidnHGchliepTsiTlO0Kk'
-MPESA_PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
-MPESA_BUSINESS_SHORTCODE = '174379'
-MPESA_CALLBACK_URL = 'your-callback-url'

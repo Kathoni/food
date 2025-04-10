@@ -86,12 +86,12 @@
 <div id="cart-sidebar">
     <h3>Your Order</h3>
     <div id="cart-items">
-        
+        <!-- Cart items will be loaded here -->
     </div>
     <div id="cart-total">
         <p>Total: Ksh <span id="total-amount">0.00</span></p>
     </div>
-    <button id="checkout-btn">Pay for order</button>
+    <button id="checkout-btn">Place Order</button>
 </div>
 
 <div id="checkout-modal" class="modal">
@@ -103,15 +103,12 @@
                 <label for="name">Your Name</label>
                 <input type="text" id="name" name="name" required>
             </div>
-            <div class="form-group">
-                <label for="phone">M-Pesa Phone Number</label>
-                <input type="text" id="phone" name="phone" placeholder="2547XXXXXXXX" required>
-            </div>
             <button type="submit">Confirm Order</button>
         </form>
     </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script src="{% static 'js/main.js' %}"></script>
 {% endblock %}

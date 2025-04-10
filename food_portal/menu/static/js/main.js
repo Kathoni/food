@@ -76,14 +76,6 @@ function loadCartItems() {
                 document.querySelectorAll('.remove-item').forEach(btn => {
                     btn.addEventListener('click', () => removeFromCart(btn.dataset.id));
                 });
-
-                document.querySelectorAll('.decrease-item').forEach(btn => {
-                    btn.addEventListener('click', () => updateCartItem(btn.dataset.id, -1));
-                });
-
-                document.querySelectorAll('.increase-item').forEach(btn => {
-                    btn.addEventListener('click', () => updateCartItem(btn.dataset.id, 1));
-                });
             } else {
                 cartItemsContainer.innerHTML = '<p>Your cart is empty</p>';
                 totalAmountElement.textContent = '0.00';
@@ -200,15 +192,9 @@ function initCheckoutForm() {
         e.preventDefault();
 
         const name = document.getElementById('name').value.trim();
-        const phone = document.getElementById('phone').value.trim();
 
         if (!name) {
             alert('Please enter your name');
-            return;
-        }
-
-        if (!/^2547\d{8}$/.test(phone)) {
-            alert('Please enter a valid M-Pesa phone number (format: 2547XXXXXXXX)');
             return;
         }
 
@@ -218,7 +204,7 @@ function initCheckoutForm() {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken'),
             },
-            body: JSON.stringify({ name: name, phone: phone })
+            body: JSON.stringify({ name: name })
         })
         .then(handleResponse)
         .then(data => {

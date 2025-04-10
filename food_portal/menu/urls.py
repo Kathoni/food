@@ -20,11 +20,11 @@ from . import views
 urlpatterns = [
     path('', views.menu_view, name='menu'),
     path('add-to-cart/', views.add_to_cart, name='add_to_cart'),
-    path('checkout/', views.checkout, name='checkout'),
     path('order/<int:order_id>/', views.order_detail, name='order_detail'),
-    path('mpesa-callback/', views.mpesa_callback, name='mpesa_callback'),
     path('get-cart-count/', views.get_cart_count, name='get_cart_count'),
     path('get-cart/', views.get_cart, name='get_cart'),
     path('remove-from-cart/', views.remove_from_cart, name= 'remove_from_cart'),
-    path('order/', views.Order, name='order')
+    path('checkout/', views.checkout, name='checkout'),
+    path('order/', views.order_list, name='order_list'),
+    path('orders/<int:order_id>/delete/', views.delete_order, name='delete_order')
 ]

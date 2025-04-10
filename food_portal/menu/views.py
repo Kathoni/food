@@ -1,79 +1,12 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import MenuItem, Announcement, Order, OrderItem
 import json
-import requests
-from django.conf import settings
 from django.contrib import messages
-import base64
-import datetime
-from requests.auth import HTTPBasicAuth 
-from django.contrib import messages
+from django.views.decorators.http import require_http_methods
 
-
-# M-Pesa Utility Functions
-def get_mpesa_access_token():
-    """Get M-Pesa API access token"""
-    consumer_key = settings.MPESA_CONSUMER_KEY
-    consumer_secret = settings.MPESA_CONSUMER_SECRET
-    url = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
-    
-    try:
-        response = requests.get(
-            url, 
-            auth=HTTPBasicAuth(consumer_key, consumer_secret),
-            timeout=30
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data.get('access_token')
-    except requests.exceptions.RequestException as e:
-        print(f"Error getting M-Pesa access token: {e}")
-        return None
-
-def initiate_stk_push(phone_number, amount, order_id):
-    """Initiate STK push to customer's phone"""
-    access_token = get_mpesa_access_token()
-    if not access_token:
-        return {'error': 'Failed to get access token'}
-
-    url = 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
-    
-    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    password = base64.b64encode(
-        (settings.MPESA_BUSINESS_SHORTCODE + settings.MPESA_PASSKEY + timestamp).encode()
-    ).decode()
-    
-    payload = {
-        "BusinessShortCode": settings.MPESA_BUSINESS_SHORTCODE,
-        "Password": password,
-        "Timestamp": timestamp,
-        "TransactionType": "CustomerPayBillOnline",
-        "Amount": str(amount),
-        "PartyA": phone_number,
-        "PartyB": settings.MPESA_BUSINESS_SHORTCODE,
-        "PhoneNumber": 254111725146,
-        "CallBackURL": settings.MPESA_CALLBACK_URL,
-        "AccountReference": f"ORDER{order_id}",
-        "TransactionDesc": "Food Order Payment"
-    }
-    
-    headers = {
-        'Authorization': f'Bearer {access_token}',
-        'Content-Type': 'application/json'
-    }
-    
-    try:
-        response = requests.post(url, json=payload, headers=headers, timeout=30)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Error initiating STK push: {e}")
-        return {'error': str(e)}
-
-# View Functions
 def menu_view(request):
     food_items = MenuItem.objects.filter(category='food', available_units__gt=0)
     beverage_items = MenuItem.objects.filter(category='beverage', available_units__gt=0)
@@ -85,10 +18,6 @@ def menu_view(request):
         'announcements': announcements,
     }
     return render(request, 'menu.html', context)
-
-
-# Add this at the top of views.py
-from django.views.decorators.http import require_http_methods
 
 @require_http_methods(["GET", "POST"])
 def add_to_cart(request):
@@ -117,7 +46,7 @@ def add_to_cart(request):
                     if (cart[item_id] + quantity) > item.available_units:
                         return JsonResponse({
                             'success': False,
-                            'error': 'Cannot add more than available stock'
+                            'error': 'Not Available'
                         })
                     cart[item_id] += quantity
                 else:
@@ -205,279 +134,12 @@ def remove_from_cart(request):
             'error': str(e)
         }, status=400)
 
-@require_http_methods(["POST"])
-# def checkout(request):
-#     try:
-#         data = json.loads(request.body)
-#         name = data.get('name')
-#         phone = data.get('phone')
-        
-#         if not name or not phone:
-#             return JsonResponse({
-#                 'success': False,
-#                 'error': 'Name and phone number are required'
-#             })
-        
-#         if not phone.startswith('254') or len(phone) != 12:
-#             return JsonResponse({
-#                 'success': False,
-#                 'error': 'Invalid phone number format (use 2547XXXXXXXX)'
-#             })
-        
-#         cart = request.session.get('cart', {})
-#         if not cart:
-#             return JsonResponse({
-#                 'success': False,
-#                 'error': 'Your cart is empty'
-#             })
-        
-#         # Calculate total and verify stock
-#         total = 0
-#         order_items = []
-        
-#         for item_id, quantity in cart.items():
-#             try:
-#                 item = MenuItem.objects.get(id=item_id)
-#                 if item.available_units < quantity:
-#                     return JsonResponse({
-#                         'success': False,
-#                         'error': f'Not enough stock for {item.name}'
-#                     })
-                
-#                 total += item.price * quantity
-#                 order_items.append({
-#                     'item': item,
-#                     'quantity': quantity,
-#                     'price': item.price
-#                 })
-#             except MenuItem.DoesNotExist:
-#                 return JsonResponse({
-#                     'success': False,
-#                     'error': f'Item {item_id} no longer available'
-#                 })
-        
-#         # Create order (without user if guest)
-#         order = Order.objects.create(
-#             customer_name=name,
-#             customer_phone=phone,
-#             total_amount=total,
-#             status='pending'
-#         )
-        
-#         # Create order items
-#         for item_data in order_items:
-#             OrderItem.objects.create(
-#                 order=order,
-#                 menu_item=item_data['item'],
-#                 quantity=item_data['quantity'],
-#                 price=item_data['price']
-#             )
-        
-#         # Process M-Pesa payment
-#         mpesa_response = initiate_stk_push(
-#             phone_number=phone,
-#             amount=total,
-#             order_id=order.id
-#         )
-        
-#         if 'error' in mpesa_response:
-#             order.status = 'failed'
-#             order.save()
-#             return JsonResponse({
-#                 'success': False,
-#                 'error': mpesa_response['error']
-#             })
-        
-#         if 'ResponseCode' in mpesa_response and mpesa_response['ResponseCode'] == '0':
-#             order.mpesa_checkout_id = mpesa_response.get('CheckoutRequestID')
-#             order.status = 'processing'
-#             order.save()
-            
-#             # Clear cart only after successful payment initiation
-#             request.session['cart'] = {}
-#             request.session.modified = True
-            
-#             return JsonResponse({
-#                 'success': True,
-#                 'order_id': order.id,
-#                 'message': 'Payment initiated! Please check your phone to complete the payment.'
-#             })
-#         else:
-#             order.status = 'failed'
-#             order.save()
-#             return JsonResponse({
-#                 'success': False,
-#                 'error': 'Payment initiation failed'
-#             })
-            
-#     except Exception as e:
-#         return JsonResponse({
-#             'success': False,
-#             'error': str(e)
-#         }, status=500)
-def checkout(request):
-    if request.method == 'POST':
-        phone_number = request.POST.get('phone_number')
-        cart = request.session.get('cart', {})
-        
-        if not cart:
-            messages.error(request, 'Your cart is empty')
-            return redirect('menu')
-        
-        # Validate phone number
-        if not phone_number or not phone_number.startswith('254') or len(phone_number) != 12:
-            messages.error(request, 'Please enter a valid M-Pesa phone number (format: 2547XXXXXXXX)')
-            return redirect('menu')
-        
-        # Calculate total
-        total = 0
-        order_items = []
-        
-        for item_id, quantity in cart.items():
-            try:
-                item = MenuItem.objects.get(id=item_id)
-                if item.available_units < quantity:
-                    messages.error(request, f'Not enough stock for {item.name}')
-                    return redirect('menu')
-                
-                total += item.price * quantity
-                order_items.append({
-                    'item': item,
-                    'quantity': quantity,
-                    'price': item.price
-                })
-            except MenuItem.DoesNotExist:
-                messages.error(request, f'Item {item_id} no longer available')
-                return redirect('menu')
-        
-        # Create order
-        order = Order.objects.create(
-            user=request.user,
-            total_amount=total,
-            status='pending'
-        )
-        
-        # Create order items and update stock
-        for item_data in order_items:
-            OrderItem.objects.create(
-                order=order,
-                menu_item=item_data['item'],
-                quantity=item_data['quantity'],
-                price=item_data['price']
-            )
-            
-            # Don't update stock yet - wait for payment confirmation
-            # item_data['item'].available_units -= item_data['quantity']
-            # item_data['item'].save()
-        
-        # Process M-Pesa payment
-        mpesa_response = initiate_stk_push(
-            phone_number=phone_number,
-            amount=total,
-            order_id=order.id
-        )
-        
-        if 'error' in mpesa_response:
-            # Handle error case
-            order.status = 'failed'
-            order.save()
-            messages.error(request, f"Payment failed: {mpesa_response['error']}")
-            return redirect('menu')
-        
-        if 'ResponseCode' in mpesa_response and mpesa_response['ResponseCode'] == '0':
-            # Payment initiated successfully
-            order.mpesa_checkout_id = mpesa_response.get('CheckoutRequestID')
-            order.status = 'processing'
-            order.save()
-            
-            # Store order ID in session for callback verification
-            request.session['processing_order'] = order.id
-            request.session.modified = True
-            
-            messages.success(request, 'Payment initiated! Please check your phone to complete the payment.')
-        else:
-            # Payment failed
-            order.status = 'failed'
-            order.save()
-            messages.error(request, 'Payment initiation failed. Please try again.')
-        
-        # Clear cart only after successful payment initiation
-        if order.status == 'processing':
-            request.session['cart'] = {}
-            request.session.modified = True
-        
-        return redirect('order_detail', order_id=order.id)
-    
-    return redirect('menu')
-
-@login_required
-def order_detail(request, order_id):
-    try:
-        order = Order.objects.get(id=order_id, user=request.user)
-        return render(request, 'menu/order_detail.html', {
-            'order': order,
-            'items': order.orderitem_set.all()
-        })
-    except Order.DoesNotExist:
-        messages.error(request, 'Order not found')
-        return redirect('menu')
-
 @csrf_exempt
-def mpesa_callback(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            callback_data = data.get('Body', {}).get('stkCallback', {})
-            result_code = callback_data.get('ResultCode')
-            checkout_id = callback_data.get('CheckoutRequestID')
-            
-            if not checkout_id:
-                return JsonResponse({'status': 'error', 'message': 'Missing CheckoutRequestID'}, status=400)
-            
-            try:
-                order = Order.objects.get(mpesa_checkout_id=checkout_id)
-            except Order.DoesNotExist:
-                return JsonResponse({'status': 'error', 'message': 'Order not found'}, status=404)
-            
-            if result_code == '0':
-                # Successful payment
-                metadata = callback_data.get('CallbackMetadata', {}).get('Item', [])
-                receipt_number = next(
-                    (item.get('Value') for item in metadata if item.get('Name') == 'MpesaReceiptNumber'),
-                    None
-                )
-                
-                order.status = 'completed'
-                order.mpesa_receipt = receipt_number
-                order.save()
-                
-                # Now update stock levels
-                for item in order.orderitem_set.all():
-                    menu_item = item.menu_item
-                    menu_item.available_units -= item.quantity
-                    menu_item.save()
-                
-                # Send confirmation email could go here
-                
-                return JsonResponse({'status': 'success'})
-            else:
-                # Failed payment
-                order.status = 'failed'
-                order.save()
-                return JsonResponse({'status': 'error', 'message': 'Payment failed'}, status=200)
-        
-        except json.JSONDecodeError:
-            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-    
-    return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
-
 def get_cart_count(request):
     cart = request.session.get('cart', {})
     return JsonResponse({'cart_count': sum(cart.values())})
 
-
+@csrf_exempt
 def get_cart_items(request):
     cart = request.session.get('cart', {})
     items = []
@@ -502,5 +164,102 @@ def get_cart_items(request):
         'items': items,
         'total': total
     })
-def Order(request):
-    return render( request, 'order.html')
+
+@login_required
+def checkout(request):
+    if request.method == 'POST':
+        try:
+            name = request.POST.get('name')
+            cart = request.session.get('cart', {})
+            
+            if not cart:
+                messages.error(request, 'Your cart is empty')
+                return redirect('menu_view')
+            
+            # Create the order
+            order = Order.objects.create(
+                user=request.user,
+                customer_name=name,
+                status='pending'
+            )
+            
+            # Create order items
+            for item_id, quantity in cart.items():
+                try:
+                    item = MenuItem.objects.get(id=item_id)
+                    OrderItem.objects.create(
+                        order=order,
+                        menu_item=item,
+                        quantity=quantity,
+                        price=item.price
+                    )
+                    # Reduce available units
+                    item.available_units -= quantity
+                    item.save()
+                except MenuItem.DoesNotExist:
+                    continue
+            
+            # Clear the cart
+            del request.session['cart']
+            request.session.modified = True
+            
+            messages.success(request, f'Order #{order.id} created successfully!')
+            return redirect('order_detail', order_id=order.id)
+            
+        except Exception as e:
+            messages.error(request, f'Error creating order: {str(e)}')
+            return redirect('menu_view')
+    
+    return redirect('menu_view')
+
+@login_required
+def order_list(request):
+    # For workers: show all orders
+    if request.user.groups.filter(name='Workers').exists():
+        orders = Order.objects.all().order_by('-created_at')
+    # For customers: show only their orders
+    else:
+        orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'orders/list.html', {'orders': orders})
+
+@login_required
+def order_detail(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    # Ensure the user can only see their own orders unless they're staff
+    if not request.user.is_staff and order.user != request.user:
+        messages.error(request, "You don't have permission to view this order")
+        return redirect('order_list')
+    
+    order_items = order.orderitem_set.all()
+    return render(request, 'orders/detail.html', {
+        'order': order,
+        'order_items': order_items
+    })
+
+@login_required
+def delete_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    
+    # Check permissions
+    if not request.user.is_staff and order.user != request.user:
+        messages.error(request, "You don't have permission to delete this order")
+        return redirect('order_list')
+    
+    if request.method == 'POST':
+        order.delete()
+        messages.success(request, f'Order #{order_id} has been deleted successfully.')
+        return redirect('order_list')
+    
+    return render(request, 'orders/confirm_delete.html', {'order': order})
+@login_required
+def order_detail(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    if not request.user.is_staff and order.user != request.user:
+        messages.error(request, "You don't have permission to view this order")
+        return redirect('order_list')
+    
+    order_items = order.orderitem_set.all()  # This gets all OrderItems for that Order
+    return render(request, 'orders/detail.html', {
+        'order': order,
+        'order_items': order_items
+    })
