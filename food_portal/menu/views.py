@@ -165,20 +165,23 @@ def get_cart_items(request):
         'total': total
     })
 
-@login_required
 def checkout(request):
     if request.method == 'POST':
         try:
             name = request.POST.get('name')
+            if not name:  # Validate name is provided
+                messages.error(request, 'Please provide your name')
+                return redirect('menu_view')
+                
             cart = request.session.get('cart', {})
             
             if not cart:
                 messages.error(request, 'Your cart is empty')
                 return redirect('menu_view')
             
-            # Create the order
+            # Create the order (user will be None for anonymous users)
             order = Order.objects.create(
-                user=request.user,
+                user=request.user if request.user.is_authenticated else None,
                 customer_name=name,
                 status='pending'
             )
@@ -208,10 +211,9 @@ def checkout(request):
             
         except Exception as e:
             messages.error(request, f'Error creating order: {str(e)}')
-            return redirect('menu_view')
+            return redirect('menu')
     
     return redirect('menu_view')
-
 @login_required
 def order_list(request):
     # For workers: show all orders

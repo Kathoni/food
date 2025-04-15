@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.urls import path
 from . import views
+from django.contrib.auth import views as auth_views
+
 
 urlpatterns = [
     path('', views.menu_view, name='menu'),
@@ -26,5 +28,6 @@ urlpatterns = [
     path('remove-from-cart/', views.remove_from_cart, name= 'remove_from_cart'),
     path('checkout/', views.checkout, name='checkout'),
     path('order/', views.order_list, name='order_list'),
-    path('orders/<int:order_id>/delete/', views.delete_order, name='delete_order')
+    path('orders/<int:order_id>/delete/', views.delete_order, name='delete_order'),
+     path('accounts/logout/', auth_views.LogoutView.as_view(next_page='menu'), name='logout'),
 ]

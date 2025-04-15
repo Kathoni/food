@@ -17,6 +17,25 @@
       color: white;
       padding: 20px;
       text-align: center;
+      position: relative;
+    }
+
+    .logout-btn {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      background-color: white;
+      color: #0e9436;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .logout-btn:hover {
+      background-color: #e6e6e6;
     }
 
     h2 {
@@ -53,7 +72,7 @@
     }
 
     footer {
-      background-color: #40b43c;
+      background-color: #21701f;
       color: white;
       text-align: center;
       padding: 10px;
@@ -66,6 +85,10 @@
 <body>
   <header>
     <h1>Food Portal</h1>
+    <form method="post" action="{% url 'logout' %}" style="position: absolute; top: 20px; right: 20px;">
+      {% csrf_token %}
+      <button type="submit" class="logout-btn">Logout</button>
+  </form>
   </header>
 
   <main>
