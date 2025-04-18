@@ -165,45 +165,43 @@ def get_cart_items(request):
         'total': total
     })
 
+# Only logged-in staff/workers can view the list of all orders
 @login_required
 def order_list(request):
-    # For workers: show all orders
-    if request.user.groups.filter(name='Workers').exists():
+    # Show all orders for staff or workers
+    if request.user.is_staff or request.user.groups.filter(name='Workers').exists():
         orders = Order.objects.all().order_by('-created_at')
-    # For customers: show only their orders
     else:
-        orders = Order.objects.filter(user=request.user).order_by('-created_at')
+        messages.error(request, "You don't have permission to view orders.")
+        return redirect('home')  # or a safer page
     return render(request, 'orders/list.html', {'orders': orders})
 
+# View specific order details
 @login_required
 def order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id)
-    # Ensure the user can only see their own orders unless they're staff
-    if not request.user.is_staff and order.user != request.user:
-        messages.error(request, "You don't have permission to view this order")
+
+    # Only allow staff or workers to view any order
+    if request.user.is_staff or request.user.groups.filter(name='Workers').exists():
+        return render(request, 'orders/detail.html', {'order': order})
+    else:
+        messages.error(request, "You don't have permission to view this order.")
         return redirect('order_list')
-    
-    return render(request, 'orders/detail.html', {
-        'order': order
 
-    })
-
+# Delete order (only for staff or workers)
 @login_required
 def delete_order(request, order_id):
     order = get_object_or_404(Order, id=order_id)
-    
-    # Check permissions
-    if not request.user.is_staff and order.user != request.user:
-        messages.error(request, "You don't have permission to delete this order")
-        return redirect('order_list')
-    
-    if request.method == 'POST':
-        order.delete()
-        messages.success(request, f'Order #{order_id} has been deleted successfully.')
-        return redirect('order_list')
-    
-    return render(request, 'orders/confirm_delete.html', {'order': order})
 
+    if request.user.is_staff or request.user.groups.filter(name='Workers').exists():
+        if request.method == 'POST':
+            order.delete()
+            messages.success(request, f'Order #{order_id} has been deleted successfully.')
+            return redirect('order_list')
+        return render(request, 'orders/confirm_delete.html', {'order': order})
+    else:
+        messages.error(request, "You don't have permission to delete this order.")
+        return redirect('order_list')
 def checkout_view(request):
     cart = request.session.get('cart', {})
     items = []
@@ -256,4 +254,4 @@ def confirm_order(request):
 
     request.session['cart'] = {}
     messages.success(request, "Order confirmed successfully!")
-    return redirect('order_list')  # Or another page if this is restricted to staff
+    return redirect('menu')  # Or another page if this is restricted to staff
