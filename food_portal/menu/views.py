@@ -204,39 +204,6 @@ def delete_order(request, order_id):
     
     return render(request, 'orders/confirm_delete.html', {'order': order})
 
-# from django.views.decorators.csrf import csrf_exempt
-# from django.http import JsonResponse
-# import json
-# from .models import Order, OrderItem
-
-# @csrf_exempt  # Only if CSRF token isn't sent – ideally not needed if token is passed
-# def confirm_order(request):
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             customer_name = data.get('name')
-#             items = data.get('items', [])
-
-#             if not customer_name or not items:
-#                 return JsonResponse({'error': 'Missing data'}, status=400)
-
-#             order = Order.objects.create(customer_name=customer_name)
-
-#             for item in items:
-#                 OrderItem.objects.create(
-#                     order=order,
-#                     item_name=item['name'],
-#                     item_price=item['price'],
-#                     quantity=item['quantity']
-#                 )
-
-#             return JsonResponse({'message': 'Order placed successfully'})
-
-#         except Exception as e:
-#             return JsonResponse({'error': str(e)}, status=500)
-
-#     return JsonResponse({'error': 'Invalid request'}, status=400)
-
 def checkout_view(request):
     cart = request.session.get('cart', {})
     items = []
@@ -265,52 +232,28 @@ def checkout_view(request):
 
 @require_POST
 def confirm_order(request):
-    name = request.POST.get('name')
+    customer_name = request.POST.get('name')
     cart = request.session.get('cart', {})
 
-    if not name or not cart:
+    if not customer_name or not cart:
         messages.error(request, "Name and cart cannot be empty.")
         return redirect('checkout')
 
-    order = Order.objects.create(name=name)
+    # No user association here
+    order = Order.objects.create(customer_name=customer_name)
 
     for item_id, quantity in cart.items():
         try:
             menu_item = MenuItem.objects.get(id=item_id)
             OrderItem.objects.create(
                 order=order,
-                item=menu_item,
-                quantity=quantity,
-                subtotal=menu_item.price * quantity
+                item_name=menu_item.name,
+                item_price=menu_item.price,
+                quantity=quantity
             )
         except MenuItem.DoesNotExist:
             continue
 
-    # Clear the cart after successful order
     request.session['cart'] = {}
     messages.success(request, "Order confirmed successfully!")
-    return redirect('home')  # or 'order-summary' if you have one
-@require_POST
-def confirm_order(request):
-    if request.method == 'POST':
-        customer_name = request.POST.get('name')
-
-        # Create the order with the correct field
-        order = Order.objects.create(customer_name=customer_name)
-
-        # Example logic: suppose you have cart items in session
-        cart = request.session.get('cart', [])
-        for item in cart:
-            OrderItem.objects.create(
-                order=order,
-                item_name=item['name'],
-                item_price=item['price'],
-                quantity=item['quantity']
-            )
-
-        # Clear cart after order
-        request.session['cart'] = []
-
-        return redirect('order_success')  # Or wherever you want to redirect
-
-    return redirect('checkout')
+    return redirect('order_list')  # Or another page if this is restricted to staff

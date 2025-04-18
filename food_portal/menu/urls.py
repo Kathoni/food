@@ -30,4 +30,5 @@ urlpatterns = [
      path('checkout/', views.checkout_view, name='checkout'),
     path('orders/<int:order_id>/delete/', views.delete_order, name='delete_order'),
      path('accounts/logout/', auth_views.LogoutView.as_view(next_page='menu'), name='logout'),
+      path('orders/', views.order_list, name='order_list'),
 ]

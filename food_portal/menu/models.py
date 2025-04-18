@@ -33,6 +33,7 @@ class Announcement(models.Model):
 from django.db import models
 
 class Order(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     customer_name = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
 
