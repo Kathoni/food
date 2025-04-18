@@ -327,7 +327,7 @@ main {
 
 /* Cart Sidebar */
 #cart-sidebar {
-    position: fixed;
+    position: relative;
     top: 0;
     right: -200px;
     width: 250px;
