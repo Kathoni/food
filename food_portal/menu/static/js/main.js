@@ -169,67 +169,25 @@ function initMenuItems() {
 }
 
 // Checkout Functionality
-function initCheckoutForm() {
-    const checkoutForm = document.getElementById('checkout-form');
-    if (!checkoutForm) return;
+function getCartItems() {
+    const items = [];
+    document.querySelectorAll("#cart-items .cart-item").forEach(cartItem => {
+        const id = cartItem.querySelector('.remove-item')?.dataset.id;
+        const quantityText = cartItem.querySelector('.cart-item-info p')?.textContent || '';
+        const match = quantityText.match(/(\d+)\s*×/);
+        const quantity = match ? parseInt(match[1]) : 1;
 
-    checkoutForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email')?.value.trim() || '';
-        const phone = document.getElementById('phone')?.value.trim() || '';
-
-        if (!name) {
-            showToast('Please enter your name');
-            return;
+        if (id) {
+            items.push({ id, quantity });
         }
-
-        // Show loading state
-        const submitBtn = checkoutForm.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Processing...';
-
-        fetch('/checkout/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-            body: JSON.stringify({ 
-                name: name,
-                email: email,
-                phone: phone
-            })
-        })
-        .then(handleResponse)
-        .then(data => {
-            if (data.success) {
-                // Clear cart and redirect
-                window.location.href = `/order/${data.order_id}/`;
-            } else {
-                showToast(data.error || 'Error processing your order');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('An error occurred while processing your order');
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        });
     });
+    return items;
 }
 
 // Cart UI Functionality
 function initCartFunctionality() {
     const cartLink = document.getElementById('cart-link');
     const cartSidebar = document.getElementById('cart-sidebar');
-    const checkoutBtn = document.getElementById('checkout-btn');
-    const checkoutModal = document.getElementById('checkout-modal');
-    const closeModal = document.querySelector('.close-modal');
 
     // Toggle cart sidebar
     if (cartLink && cartSidebar) {
@@ -247,25 +205,14 @@ function initCartFunctionality() {
         });
     }
 
-    // Checkout modal handling
-    if (checkoutBtn && checkoutModal) {
+    // Redirect to Django checkout view
+    const checkoutBtn = document.getElementById('checkout-btn');
+    if (checkoutBtn) {
         checkoutBtn.addEventListener('click', function (e) {
             e.preventDefault();
-            checkoutModal.style.display = 'block';
+            window.location.href = "/checkout/";
         });
     }
-
-    if (closeModal && checkoutModal) {
-        closeModal.addEventListener('click', function () {
-            checkoutModal.style.display = 'none';
-        });
-    }
-
-    window.addEventListener('click', function (e) {
-        if (e.target === checkoutModal) {
-            checkoutModal.style.display = 'none';
-        }
-    });
 
     updateCartCount();
 }
@@ -314,4 +261,9 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+function clearCart() {
+    document.getElementById('cart-items').innerHTML = '<p>Your cart is empty</p>';
+    document.getElementById('total-amount').textContent = '0.00';
+    updateCartCount();
 }

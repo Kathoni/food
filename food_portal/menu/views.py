@@ -6,7 +6,7 @@ from .models import MenuItem, Announcement, Order, OrderItem
 import json
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
-
+from django.views.decorators.http import require_POST
 def menu_view(request):
     food_items = MenuItem.objects.filter(category='food', available_units__gt=0)
     beverage_items = MenuItem.objects.filter(category='beverage', available_units__gt=0)
@@ -165,55 +165,6 @@ def get_cart_items(request):
         'total': total
     })
 
-def checkout(request):
-    if request.method == 'POST':
-        try:
-            name = request.POST.get('name')
-            if not name:  # Validate name is provided
-                messages.error(request, 'Please provide your name')
-                return redirect('menu_view')
-                
-            cart = request.session.get('cart', {})
-            
-            if not cart:
-                messages.error(request, 'Your cart is empty')
-                return redirect('menu_view')
-            
-            # Create the order (user will be None for anonymous users)
-            order = Order.objects.create(
-                user=request.user if request.user.is_authenticated else None,
-                customer_name=name,
-                status='pending'
-            )
-            
-            # Create order items
-            for item_id, quantity in cart.items():
-                try:
-                    item = MenuItem.objects.get(id=item_id)
-                    OrderItem.objects.create(
-                        order=order,
-                        menu_item=item,
-                        quantity=quantity,
-                        price=item.price
-                    )
-                    # Reduce available units
-                    item.available_units -= quantity
-                    item.save()
-                except MenuItem.DoesNotExist:
-                    continue
-            
-            # Clear the cart
-            del request.session['cart']
-            request.session.modified = True
-            
-            messages.success(request, f'Order #{order.id} created successfully!')
-            return redirect('order_detail', order_id=order.id)
-            
-        except Exception as e:
-            messages.error(request, f'Error creating order: {str(e)}')
-            return redirect('menu')
-    
-    return redirect('menu_view')
 @login_required
 def order_list(request):
     # For workers: show all orders
@@ -232,10 +183,9 @@ def order_detail(request, order_id):
         messages.error(request, "You don't have permission to view this order")
         return redirect('order_list')
     
-    order_items = order.orderitem_set.all()
     return render(request, 'orders/detail.html', {
-        'order': order,
-        'order_items': order_items
+        'order': order
+
     })
 
 @login_required
@@ -253,3 +203,114 @@ def delete_order(request, order_id):
         return redirect('order_list')
     
     return render(request, 'orders/confirm_delete.html', {'order': order})
+
+# from django.views.decorators.csrf import csrf_exempt
+# from django.http import JsonResponse
+# import json
+# from .models import Order, OrderItem
+
+# @csrf_exempt  # Only if CSRF token isn't sent – ideally not needed if token is passed
+# def confirm_order(request):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+#             customer_name = data.get('name')
+#             items = data.get('items', [])
+
+#             if not customer_name or not items:
+#                 return JsonResponse({'error': 'Missing data'}, status=400)
+
+#             order = Order.objects.create(customer_name=customer_name)
+
+#             for item in items:
+#                 OrderItem.objects.create(
+#                     order=order,
+#                     item_name=item['name'],
+#                     item_price=item['price'],
+#                     quantity=item['quantity']
+#                 )
+
+#             return JsonResponse({'message': 'Order placed successfully'})
+
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)}, status=500)
+
+#     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+def checkout_view(request):
+    cart = request.session.get('cart', {})
+    items = []
+    total = 0
+
+    for item_id, quantity in cart.items():
+        try:
+            menu_item = MenuItem.objects.get(id=item_id)
+            subtotal = menu_item.price * quantity
+            items.append({
+                'id': item_id,
+                'name': menu_item.name,
+                'price': menu_item.price,
+                'quantity': quantity,
+                'subtotal': subtotal
+            })
+            total += subtotal
+        except MenuItem.DoesNotExist:
+            continue
+
+    context = {
+        'items': items,
+        'total': total
+    }
+    return render(request, 'checkout.html', context)
+
+@require_POST
+def confirm_order(request):
+    name = request.POST.get('name')
+    cart = request.session.get('cart', {})
+
+    if not name or not cart:
+        messages.error(request, "Name and cart cannot be empty.")
+        return redirect('checkout')
+
+    order = Order.objects.create(name=name)
+
+    for item_id, quantity in cart.items():
+        try:
+            menu_item = MenuItem.objects.get(id=item_id)
+            OrderItem.objects.create(
+                order=order,
+                item=menu_item,
+                quantity=quantity,
+                subtotal=menu_item.price * quantity
+            )
+        except MenuItem.DoesNotExist:
+            continue
+
+    # Clear the cart after successful order
+    request.session['cart'] = {}
+    messages.success(request, "Order confirmed successfully!")
+    return redirect('home')  # or 'order-summary' if you have one
+@require_POST
+def confirm_order(request):
+    if request.method == 'POST':
+        customer_name = request.POST.get('name')
+
+        # Create the order with the correct field
+        order = Order.objects.create(customer_name=customer_name)
+
+        # Example logic: suppose you have cart items in session
+        cart = request.session.get('cart', [])
+        for item in cart:
+            OrderItem.objects.create(
+                order=order,
+                item_name=item['name'],
+                item_price=item['price'],
+                quantity=item['quantity']
+            )
+
+        # Clear cart after order
+        request.session['cart'] = []
+
+        return redirect('order_success')  # Or wherever you want to redirect
+
+    return redirect('checkout')

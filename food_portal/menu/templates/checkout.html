@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Checkout</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .checkout-card {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .checkout-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="checkout-card">
+        <h2 class="checkout-header">Checkout</h2>
+
+        <form method="POST" action="{% url 'confirm_order' %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="name" class="form-label">Your Name</label>
+                <input type="text" id="name" name="name" class="form-control" required>
+            </div>
+
+            <h4 class="mt-4">Order Summary</h4>
+            <ul class="list-group mb-3">
+                {% for item in items %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ item.quantity }} × {{ item.name }}
+                        <span>Ksh {{ item.subtotal }}</span>
+                    </li>
+                {% endfor %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <strong>Total</strong>
+                    <strong class="text-success">Ksh {{ total }}</strong>
+                </li>
+            </ul>
+
+            <div class="d-grid">
+                <button type="submit" class="btn " style="background-color: #134e32; color: #fff;" >Confirm Order</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

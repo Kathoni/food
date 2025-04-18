@@ -91,22 +91,9 @@
     <div id="cart-total">
         <p>Total: Ksh <span id="total-amount">0.00</span></p>
     </div>
-    <button id="checkout-btn">Place Order</button>
+    <button id="checkout-btn"href="{% url 'checkout' %}">Confirm order</button>
 </div>
 
-<div id="checkout-modal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <h2>Checkout</h2>
-        <form id="checkout-form">
-            <div class="form-group">
-                <label for="name">Your Name</label>
-                <input type="text" id="name" name="name" required>
-            </div>
-            <button type="submit">Confirm Order</button>
-        </form>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}

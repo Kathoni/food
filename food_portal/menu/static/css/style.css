@@ -329,8 +329,8 @@ main {
 #cart-sidebar {
     position: fixed;
     top: 0;
-    right: -350px;
-    width: 350px;
+    right: -200px;
+    width: 250px;
     height: 100%;
     background-color: white;
     box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);

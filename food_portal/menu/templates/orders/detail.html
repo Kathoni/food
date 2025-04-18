@@ -1,4 +1,3 @@
-{% extends 'base.html' %}
 
 {% block content %}
   <style>
@@ -82,12 +81,14 @@
   <p>Status: {{ order.status }}</p>
   <p>Customer: {{ order.customer_name }}</p>
 
-  <h3>Items:</h3>
+  {% for order in orders %}
+  <h3>{{ order.customer_name }} - {{ order.created_at }}</h3>
   <ul>
-    {% for item in order_items %}
-      <li>{{ item.quantity }} x {{ item.menu_item.name }} @ Ksh {{ item.price }} = Ksh {{ item.price|floatformat:2|add:""|floatformat:2|add:item.quantity|floatformat:2 }}</li>
-    {% endfor %}
+      {% for item in order.items.all %}
+          <li>{{ item.name }}</li>
+      {% endfor %}
   </ul>
+{% endfor %}
 
   <form action="{% url 'delete_order' order.id %}" method="post">
     {% csrf_token %}
