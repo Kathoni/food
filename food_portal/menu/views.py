@@ -196,7 +196,6 @@ def delete_order(request, order_id):
     if request.user.is_staff or request.user.groups.filter(name='Workers').exists():
         if request.method == 'POST':
             order.delete()
-            messages.success(request, f'Order #{order_id} has been deleted successfully.')
             return redirect('order_list')
         return render(request, 'orders/confirm_delete.html', {'order': order})
     else:

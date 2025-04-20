@@ -216,81 +216,8 @@ main {
     border-radius: 5px;
 }
 
-/* Admin Styles */
-.admin-container {
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
 
-.admin-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--secondary-color);
-}
 
-#new-announcement-btn {
-    padding: 8px 15px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-#new-announcement-btn:hover {
-    background-color: var(--secondary-color);
-    color: var(--primary-color);
-}
-
-.stock-alerts {
-    margin-bottom: 30px;
-    padding: 15px;
-    background-color: #fff3f3;
-    border-left: 4px solid var(--accent-color);
-}
-
-.stock-alerts ul {
-    list-style: none;
-}
-
-.stock-alerts li {
-    padding: 10px 0;
-    border-bottom: 1px solid #ffd6d6;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.resolve-alert {
-    padding: 5px 10px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.resolve-alert:hover {
-    background-color: var(--secondary-color);
-    color: var(--primary-color);
-}
-
-.admin-menu-item {
-    background-color: white;
-    padding: 15px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.admin-menu-item h4 {
-    color: var(--primary-color);
-    margin-bottom: 15px;
-}
 
 .form-group {
     margin-bottom: 10px;
@@ -327,9 +254,9 @@ main {
 
 /* Cart Sidebar */
 #cart-sidebar {
-    position: relative;
+    position: fixed;
     top: 0;
-    right: -200px;
+    right: 0;
     width: 250px;
     height: 100%;
     background-color: white;

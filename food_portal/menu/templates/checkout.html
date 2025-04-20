@@ -36,7 +36,10 @@
                 <label for="name" class="form-label">Your Name</label>
                 <input type="text" id="name" name="name" class="form-control" required>
             </div>
-
+            <div class="mb-3">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input type="tel" id="phone" name="phone" class="form-control" placeholder="e.g. 254712345678" required>
+            </div>            
             <h4 class="mt-4">Order Summary</h4>
             <ul class="list-group mb-3">
                 {% for item in items %}
