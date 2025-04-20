@@ -7,6 +7,11 @@ import json
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.http import require_POST
+import base64
+import datetime
+import requests
+from django.conf import settings
+
 def menu_view(request):
     food_items = MenuItem.objects.filter(category='food', available_units__gt=0)
     beverage_items = MenuItem.objects.filter(category='beverage', available_units__gt=0)
@@ -226,31 +231,81 @@ def checkout_view(request):
         'total': total
     }
     return render(request, 'checkout.html', context)
-
 @require_POST
 def confirm_order(request):
     customer_name = request.POST.get('name')
+    phone = request.POST.get('phone')
     cart = request.session.get('cart', {})
 
-    if not customer_name or not cart:
-        messages.error(request, "Name and cart cannot be empty.")
+    if not customer_name or not phone or not cart:
+        messages.error(request, "All fields are required.")
         return redirect('checkout')
 
-    # No user association here
-    order = Order.objects.create(customer_name=customer_name)
-
+    # Calculate total
+    total = 0
     for item_id, quantity in cart.items():
         try:
-            menu_item = MenuItem.objects.get(id=item_id)
-            OrderItem.objects.create(
-                order=order,
-                item_name=menu_item.name,
-                item_price=menu_item.price,
-                quantity=quantity
-            )
+            item = MenuItem.objects.get(id=item_id)
+            total += item.price * quantity
         except MenuItem.DoesNotExist:
             continue
+    total = int(total) # Convert to integer
+    # Call M-Pesa STK push
+    payment_response = initiate_mpesa_payment(phone, total)
 
-    request.session['cart'] = {}
-    messages.success(request, "Order confirmed successfully!")
-    return redirect('menu')  # Or another page if this is restricted to staff
+    if payment_response.get('ResponseCode') == '0':
+        # Create the order
+        order = Order.objects.create(customer_name=customer_name)
+        for item_id, quantity in cart.items():
+            try:
+                item = MenuItem.objects.get(id=item_id)
+                OrderItem.objects.create(
+                    order=order,
+                    item_name=item.name,
+                    item_price=item.price,
+                    quantity=quantity
+                )
+            except MenuItem.DoesNotExist:
+                continue
+
+        request.session['cart'] = {}
+        messages.success(request, "Order placed! Awaiting payment confirmation on your phone.")
+        return redirect('menu')
+
+    else:
+        messages.error(request, "Failed to initiate M-Pesa payment. Try again.")
+        return redirect('menu')
+
+def initiate_mpesa_payment(phone, amount):
+    # Step 1: Get access token
+    token_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
+    r = requests.get(token_url, auth=(settings.MPESA_CONSUMER_KEY, settings.MPESA_CONSUMER_SECRET))
+    access_token = r.json().get('access_token')
+
+    # Step 2: STK push
+    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    password = base64.b64encode(
+        (settings.MPESA_SHORTCODE + settings.MPESA_PASSKEY + timestamp).encode()).decode()
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "BusinessShortCode": "174379",
+        "Password": password,
+        "Timestamp": timestamp,
+        "TransactionType": "CustomerPayBillOnline",
+        "Amount": 60,
+        "PartyA": "254708374149",
+        "PartyB":"174379" ,
+        "PhoneNumber": phone,
+        "CallBackURL": "https://example.com/api/mpesa/callback",
+        "AccountReference": "Order Payment",
+        "TransactionDesc": "Food order payment"
+    }
+
+    stk_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+    response = requests.post(stk_url, json=payload, headers=headers)
+    return response.json()
