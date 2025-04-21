@@ -265,6 +265,10 @@ def confirm_order(request):
                     item_price=item.price,
                     quantity=quantity
                 )
+
+                item.available_units -= quantity
+                item.save()
+
             except MenuItem.DoesNotExist:
                 continue
 
