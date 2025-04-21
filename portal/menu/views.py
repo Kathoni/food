@@ -277,12 +277,12 @@ def confirm_order(request):
         return redirect('menu')
 
 def initiate_mpesa_payment(phone, amount):
-    # Step 1: Get access token
+    
     token_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
     r = requests.get(token_url, auth=(settings.MPESA_CONSUMER_KEY, settings.MPESA_CONSUMER_SECRET))
     access_token = r.json().get('access_token')
 
-    # Step 2: STK push
+    
     timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     password = base64.b64encode(
         (settings.MPESA_SHORTCODE + settings.MPESA_PASSKEY + timestamp).encode()).decode()
@@ -297,7 +297,7 @@ def initiate_mpesa_payment(phone, amount):
         "Password": password,
         "Timestamp": timestamp,
         "TransactionType": "CustomerPayBillOnline",
-        "Amount": 60,
+        "Amount": amount,
         "PartyA": "254708374149",
         "PartyB":"174379" ,
         "PhoneNumber": phone,

@@ -80,6 +80,7 @@
   <h2>Order {{ order.id }}</h2>
   <p>Customer: {{ order.customer_name }}</p>
   <p>Created At: {{ order.created_at }}</p>
+  <p>Items: {{ order.item_names }}</p>
   <p>Amount: {{ order.total_amount }}</p>
 
   {% for order in orders %}
