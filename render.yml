@@ -4,5 +4,5 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn menu.wsgi:application
+    startCommand: gunicorn food_portal.wsgi:application
     rootDir: food-5
