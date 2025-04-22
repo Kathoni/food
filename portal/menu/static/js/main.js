@@ -188,22 +188,35 @@ function getCartItems() {
 function initCartFunctionality() {
     const cartLink = document.getElementById('cart-link');
     const cartSidebar = document.getElementById('cart-sidebar');
+    const closeCartBtn = document.getElementById('close-cart-btn');
 
-    // Toggle cart sidebar
+    // Open cart when clicking the cart icon
     if (cartLink && cartSidebar) {
         cartLink.addEventListener('click', function (e) {
             e.preventDefault();
-            cartSidebar.style.right = cartSidebar.style.right === '0px' ? '-350px' : '0px';
-            if (cartSidebar.style.right === '0px') loadCartItems();
-        });
-
-        // Close sidebar when clicking outside
-        document.addEventListener('click', function (e) {
-            if (!cartSidebar.contains(e.target) && e.target !== cartLink && !cartLink.contains(e.target)) {
-                cartSidebar.style.right = '-350px';
-            }
+            cartSidebar.style.right = '0px';
+            loadCartItems();
         });
     }
+
+    // Close cart when clicking close button
+    if (closeCartBtn) {
+        closeCartBtn.addEventListener('click', function () {
+            cartSidebar.style.right = '-350px';
+        });
+    }
+
+    // Optional: Close cart when clicking outside
+    document.addEventListener('click', function (e) {
+        if (
+            cartSidebar &&
+            !cartSidebar.contains(e.target) &&
+            e.target !== cartLink &&
+            !cartLink.contains(e.target)
+        ) {
+            cartSidebar.style.right = '-350px';
+        }
+    });
 
     // Redirect to Django checkout view
     const checkoutBtn = document.getElementById('checkout-btn');

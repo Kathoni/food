@@ -269,6 +269,12 @@ main {
 #cart-sidebar.open {
     right: 0;
 }
+#close-cart-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+}
 
 #cart-sidebar h3 {
     color: var(--primary-color);

@@ -84,6 +84,7 @@
 </div>
 
 <div id="cart-sidebar">
+    <button id="close-cart-btn">&times;</button>
     <h3>Your Order</h3>
     <div id="cart-items">
         <!-- Cart items will be loaded here -->
@@ -92,6 +93,7 @@
         <p>Total: Ksh <span id="total-amount">0.00</span></p>
     </div>
     <button id="checkout-btn"href="{% url 'checkout' %}">Confirm order</button>
+    
 </div>
 
 {% endblock %}
