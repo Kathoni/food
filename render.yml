@@ -1,8 +1,1 @@
-services:
-  - type: web
-    name: food-app
-    env: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn food_portal.wsgi:application
-    rootDir: food-5
+
