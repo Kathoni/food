@@ -262,8 +262,3 @@ function getCookie(name) {
     }
     return cookieValue;
 }
-// function clearCart() {
-//     document.getElementById('cart-items').innerHTML = '<p>Your cart is empty</p>';
-//     document.getElementById('total-amount').textContent = '0.00';
-//     updateCartCount();
-// }

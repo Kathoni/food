@@ -256,7 +256,7 @@ main {
 #cart-sidebar {
     position: fixed;
     top: 0;
-    right: 0;
+    right: -350px;
     width: 250px;
     height: 100%;
     background-color: white;
@@ -264,6 +264,10 @@ main {
     padding: 20px;
     transition: right 0.3s ease;
     z-index: 1000;
+}
+
+#cart-sidebar.open {
+    right: 0;
 }
 
 #cart-sidebar h3 {

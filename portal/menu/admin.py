@@ -19,7 +19,15 @@ class OrderAdmin(admin.ModelAdmin):
         return sum(item.item_price * item.quantity for item in obj.items.all())
 
     total_amount.short_description = 'Total Amount'  # Optional: Set column header
-  
+ 
+class CustomAdminSite(admin.AdminSite):
+    class Media:
+        css = {
+            'all': ('css/custom_admin.css',)
+        }
+
+admin.site = CustomAdminSite()
+   
 
 admin.site.register(MenuItem, MenuItemAdmin)
 admin.site.register(Announcement)
