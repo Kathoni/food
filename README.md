@@ -47,5 +47,11 @@ A Django-based food ordering web application for SEKU MESSHALL. Students can vie
 10. Access the admin interface by logging in with admin credentials
 11. Manage menu availability and orders through the admin interface by `python manage.py createsuperuser`
 
--
+---
+## 📝 Contributing
+Contributions are welcome! Please fork the repository and submit a pull request with your changes.
+
+---
+## Enjoy 🚀🚀
+Happy hacking
 
