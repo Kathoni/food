@@ -12,6 +12,11 @@ A Django-based food ordering web application for SEKU MESSHALL. Students can vie
 - 📩 User alerts and messages  
 - 📅 Dynamic footer with current year  
 - 🎨 Styled using CSS and Font Awesome icons  
+- 📈 Admin dashboard for order management and menu updates
+- 📊 User authentication and authorization using Django's built-in user model
+- 📈 Order tracking and management for admins
+- 💸 Payment using mpesa implemented
+
 
 ---
 
