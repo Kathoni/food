@@ -35,7 +35,7 @@ A Django-based food ordering web application for SEKU MESSHALL. Students can vie
 
 
 ## 📝 Installation and Setup
-1. Clone the repository using `git clone https://github.com/your-username/sekum
+1. Clone the repository using `https://github.com/Kathoni/food`
 2. Create a new database using `python manage.py migrate`
 3. Run the application using `python manage.py runserver`
 4. Access the application at `http://localhost:8000/`
